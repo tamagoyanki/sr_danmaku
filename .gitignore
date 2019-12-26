@@ -1,3 +1,11 @@
+# sr_danmaku
+.idea/
+backup/
+comments/*
+test*
+*.lnk
+*.URL
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
