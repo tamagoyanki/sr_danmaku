@@ -43,7 +43,12 @@ Only comments from this room will be recorded.
 
 5. If the danmaku subtitles are not synchronized with the recorded showroom video. You can use [Aegisub Advanced Subtitle Editor](http://www.aegisub.org/) to edit the subtitle ***`.ass`*** file. Using Aegisub you can batch remove subtitles or batch time shift subtitles to synchronize with the video.
 
+## Known Issues
 
+1. Command Prompt programs freeze on Windows 10 solusion: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
+
+
+-----------------------------------------------------------------------
 ## Links
 - [Showroom Live Watcher](https://github.com/wlerin/showroom) : records Showroom live streams.
 
