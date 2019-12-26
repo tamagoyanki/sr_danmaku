@@ -43,7 +43,7 @@ Only comments from this room will be recorded.
 
 5. If the danmaku subtitles are not synchronized with the recorded showroom video. You can use [Aegisub Advanced Subtitle Editor](http://www.aegisub.org/) to edit the subtitle ***`.ass`*** file. Using Aegisub you can batch remove subtitles or batch time shift subtitles to synchronize with the video.
 
-## Pack the program to a stand-alone Windows exicutable .EXE file
+## Pack the program to a stand-alone Windows executable .EXE file
 1. Install the latest version of PyInstaller which is compatible with Python 3.8:
 ```
 pip install https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
