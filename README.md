@@ -1,5 +1,7 @@
-# sr_danmaku
-Record SHOWROOM (showroom-live.com) live comments and save as niconico danmaku (弾幕 / bullets) subtitle ass file.
+# Showroom Comments Danmaku Recorder
+Record SHOWROOM (showroom-live.com) live comments and save them as a danmaku (弾幕 / bullets) subtitle (***`.ass`***) file.
+Danmaku subtitles are those bullet-like flying through screen comments. They can ususally be seen on websites like [niconico](https://www.nicovideo.jp/) and [bilibili](https://www.bilibili.com/). 
+The saved ***`.ass`*** subtitle file can then be watched with the recorded Showroom video file.
 
 ## Installation
 1. Install Python 3.x from [Python.org](https://www.python.org/downloads/)
