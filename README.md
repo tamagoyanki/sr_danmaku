@@ -59,7 +59,8 @@ You can double click ***`sr_danmaku.exe`*** to run.
 
 ## Known Issues
 
-1. The program freezes on on Windows 10 Command Prompt window. Check the solusion below to disable the QuickEdit mode of Command Prompt: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
+1. The Command Prompt window on Windows 10 has the QuickEdit mode which causes the program to freeze. Check the following link to 
+see the solution: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
 
 
 -----------------------------------------------------------------------
