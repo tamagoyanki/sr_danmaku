@@ -2,8 +2,9 @@
 Record SHOWROOM (showroom-live.com) live comments and save as niconico danmaku (弾幕 / bullets) subtitle ass file.
 
 ## Installation
-Python 3 is required. It's better to be Python 3.8.0+
+1. Install Python 3.x from [Python.org](https://www.python.org/downloads/)
 
+2. Install other required packages:
 ```
 pip install -r requirements.txt
 ```
@@ -26,13 +27,13 @@ When program is running, you can enter the following command:
 
 3. If the program is already recording rooms, but you need to emergently record a new room.
 You can run another instance of the program with **`-u`** option.
-Suppose the room url is `https://www.showroom-live.com/room_url_key`:
+Suppose the room url is `https://www.showroom-live.com/ROOM_URL_KEY`:
 ```
-python sr_danmaku.py -u https://www.showroom-live.com/room_url_key
+python sr_danmaku.py -u https://www.showroom-live.com/ROOM_URL_KEY
 ```
 Or
 ```
-python sr_danmaku.py -u room_url_key
+python sr_danmaku.py -u ROOM_URL_KEY
 ```
 Only comments from this room will be recorded.
 
