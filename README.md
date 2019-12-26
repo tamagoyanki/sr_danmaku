@@ -50,7 +50,7 @@ pip install https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
 ```
 2. Run:
 ```
-pyinstaller -F .\hello.py
+pyinstaller -F .\sr_danmaku.py
 ```
 3. Find ***`sr_danmaku.exe`*** in the produced ***`dist`*** folder. 
 Move it and place it with ***`sr_danmaku.ini`*** and ***`room.ini`*** in the same folder, and you're done.
