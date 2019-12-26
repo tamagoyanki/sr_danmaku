@@ -59,8 +59,7 @@ You can double click ***`sr_danmaku.exe`*** to run.
 
 ## Known Issues
 
-1. The Command Prompt window on Windows 10 has the QuickEdit mode which causes the program to freeze. Check the following link to 
-see the solution about how to disable the QuickEdit mode: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
+1. On Windows 10, when you mouse click the Command Prompt window, the program will freeze. To make the program run again, you need to press Esc or right click the mouse or you can type a command. To solve this problem, make sure you disable the QuickEdit mode of Command Prompt: Right click on the top bar of Command Prompt, select ***`Properties`*** (or ***`Defaults`*** if you want to make the change once for all). Then under the ***`Options`*** tab, uncheck ***`QuickEdit Mode`*** and click ***`OK`***. For more details, see the following link: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
 
 
 -----------------------------------------------------------------------
