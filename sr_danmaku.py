@@ -612,7 +612,51 @@ class RoomMonitor:
         return
 
 
-def readIni(mode, filename):
+def readRoomsFile(filename):
+    roomsTxt = """#######################################################################################
+#
+# To add a room for recording comments:
+#   Suppose the room url address is: "https://www.showroom-live.com/ROOM_URL_KEY".
+#   Just copy and paste the full url address.
+#   Or you can copy and paste only the last part "ROOM_URL_KEY".
+#
+# Anything after the symbol "#" on a line is ignored by the program.
+#
+#######################################################################################
+
+
+"""
+    # create file if not present
+    path = os.getcwd()
+    filenamepath = os.path.join(path, filename)
+    if not os.path.isfile(filenamepath):
+        with open(filenamepath, 'w', encoding='utf8') as fp:
+                fp.write(roomsTxt)
+        print('Created {}'.format(filename))
+
+    with open(filenamepath, 'r', encoding='utf8') as fp:
+        lines = fp.readlines()
+
+    room_url_keys = []
+    sr_url = 'https://www.showroom-live.com/'
+    for line in lines:
+        # remove # and line after it
+        sharp = line.find('#')
+        if sharp > -1:
+            line = line[:sharp]
+        line = line.strip()
+        if len(line) == 0:
+            continue
+
+        # remove showroom url
+        srIdx = line.find(sr_url)
+        if srIdx > -1:
+            line = line[len(sr_url):]
+        room_url_keys.append(line)
+    return room_url_keys
+
+
+def readSettingsFile(filename):
     settingsTxt = """[program_settings]
 interval = 10                    # seconds, time interval to check rooms are on live or not
 show_comments = 0                # 1: enable, 0: disable
@@ -627,88 +671,43 @@ font_name = MS PGothic
 font_size = 18
 alpha = 10                       # transparency percentage, a number between 0 and 100
 
-
-
 """
-
-    roomsTxt = """#######################################################################################
-# To add a room to monitor and record its comments, copy and paste its room_url_key
-# in the "[rooms]" section below. Each line is only for one room.
-#
-# The room_url_key is the last part of the room url address.
-# For example, if a room url is https://www.showroom-live.com/LOVE_ANNA_YAMAMOTO
-# The room_url_key is the last part after the main website address: LOVE_ANNA_YAMAMOTO
-# Please note that it is case sensitive.
-#
-# The program checks the on live list from the Showroom website. A wrong room_url_key
-# will not be notified by the program since it will never be found on the on live list.
-#
-# Anything after the "#" symbol on a line will be ignored by the program.
-# You can put description for a room_url_key after #, or you
-# can temporarily cancel a room_url_key by inserting # in
-# front of it.
-#
-# This file only provides an example, go ahead to remove all room_url_keys below and
-# add your own rooms. Or you can delete this file and run the program once to generate
-# a clean file.
-#######################################################################################
-[rooms]
-
-
-
-"""
-
-    # create ini if not present
+    # create file if not present
     path = os.getcwd()
     filenamepath = os.path.join(path, filename)
-
     if not os.path.isfile(filenamepath):
         with open(filenamepath, 'w', encoding='utf8') as fp:
-            if mode == 1:
                 fp.write(settingsTxt)
-            else:
-                fp.write(roomsTxt)
+        print('Created {}'.format(filename))
 
     with open(filenamepath, 'r', encoding='utf8') as fp:
         lines = fp.readlines()
 
-    inComments = False
     foundProgSettings = False
     foundDanmakuSettings = False
-    foundRooms = False
     program_settings = {}
     danmaku_settings = {}
-    room_url_keys = []
     for line in lines:
-        line = line.strip()
         # remove # and line after it
         sharp = line.find('#')
         if sharp > -1:
-            line = line[:sharp].strip()
+            line = line[:sharp]
+        line = line.strip()
         if len(line) == 0:
             continue
 
         if line.lower().find('[program_settings]') > -1:
             foundProgSettings = True
             foundDanmakuSettings = False
-            foundRooms = False
             continue
         if line.lower().find('[danmaku_settings]') > -1:
             foundProgSettings = False
             foundDanmakuSettings = True
-            foundRooms = False
-            continue
-        if line.lower().find('[rooms]') > -1:
-            foundProgSettings = False
-            foundDanmakuSettings = False
-            foundRooms = True
             continue
 
         if foundProgSettings:
             s1, s2 = line.split("=", 1)
             program_settings.update({s1.lower().strip(): int(s2.lower().strip())})
-            # if s1.strip().lower().find('interval') > -1:
-            #     settings['interval'] = float(s2.strip())
             continue
 
         if foundDanmakuSettings:
@@ -720,21 +719,14 @@ alpha = 10                       # transparency percentage, a number between 0 a
             danmaku_settings.update({s1: s2})
             continue
 
-        if foundRooms:
-            room_url_keys.append(line)
-
     settings = {'program_settings': program_settings, 'danmaku_settings': danmaku_settings}
-
-    if mode == 1:
-        return settings
-    else:
-        return room_url_keys
+    return settings
 
 
 def main():
     # read settings and room_url_keys
-    settings = readIni(1, 'sr_danmaku.ini')
-    room_url_keys = readIni(2, 'rooms.ini')
+    settings = readSettingsFile('sr_danmaku.ini')
+    room_url_keys = readRoomsFile('rooms.ini')
 
     # build logging
     log = logging.getLogger()
