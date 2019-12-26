@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ## Usage
 
 1. Edit the file ***`rooms.ini`*** and add the rooms you want to monitor and record their comments.  
-2. Run program:
+2. Run the program:
 ```
 python sr_danmaku.py
 ```
