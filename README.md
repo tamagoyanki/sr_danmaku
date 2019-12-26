@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Edit the file ***`rooms.ini`*** and add the rooms you want to monitor and record their comments.  
+1. Edit the file ***`rooms.ini`*** to remove example rooms, and add the rooms you want to monitor and record comments.  
 2. Run the program:
 ```
 python sr_danmaku.py
@@ -37,9 +37,9 @@ Or
 ```
 python sr_danmaku.py -u ROOM_URL_KEY
 ```
-Only comments from this room will be recorded.
+This will ignore ***`rooms.ini`*** and only record comments from one room.
 
-4. When a live is finished, the recorded comments will be converted to danmaku subtitle, and it will be saved as a ***`.ass`*** file under the folder ***`comments`***.
+4. When a live is finished, the recorded comments will be converted to danmaku subtitle, and saved as a ***`.ass`*** file under the folder ***`comments`***.
 
 5. If the danmaku subtitles are not synchronized with the recorded showroom video. You can use [Aegisub Advanced Subtitle Editor](http://www.aegisub.org/) to edit the subtitle ***`.ass`*** file. Using Aegisub you can batch remove subtitles or batch time shift subtitles to synchronize with the video.
 
@@ -59,7 +59,7 @@ You can double click ***`sr_danmaku.exe`*** to run.
 
 ## Known Issues
 
-1. On Windows 10, when you mouse click the Command Prompt window, the program will freeze. To make the program run again, you need to press Esc or right click the mouse or you can type a command. To solve this problem, make sure you disable the QuickEdit mode of Command Prompt: Right click on the top bar of Command Prompt, select ***`Properties`*** (or ***`Defaults`*** if you want to make the change once for all). Then under the ***`Options`*** tab, uncheck ***`QuickEdit Mode`*** and click ***`OK`***. For more details, see the following link: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
+1. On Windows 10, when you mouse click on the Command Prompt window, the program will freeze. To make it run again, you need to press Esc or right click the mouse or you can type a command. To solve this problem, make sure you disable the QuickEdit mode of Command Prompt: Right click on the top bar of Command Prompt, select ***`Properties`*** (or ***`Defaults`*** if you want to make the change once for all). Then under the ***`Options`*** tab, uncheck ***`QuickEdit Mode`*** and click ***`OK`***. For more details, please see the following link: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
 
 
 -----------------------------------------------------------------------
