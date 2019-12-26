@@ -43,9 +43,23 @@ Only comments from this room will be recorded.
 
 5. If the danmaku subtitles are not synchronized with the recorded showroom video. You can use [Aegisub Advanced Subtitle Editor](http://www.aegisub.org/) to edit the subtitle ***`.ass`*** file. Using Aegisub you can batch remove subtitles or batch time shift subtitles to synchronize with the video.
 
+## Pack the program to a stand-alone Windows exicutable .EXE file
+1. Install the latest version of PyInstaller which is compatible with Python 3.8:
+```
+pip install https://github.com/pyinstaller/pyinstaller/archive/develop.tar.gz
+```
+2. Run:
+```
+pyinstaller -F .\hello.py
+```
+3. Find ***`sr_danmaku.exe`*** in the produced ***`dist`*** folder. 
+Move it and place it with ***`sr_danmaku.ini`*** and ***`room.ini`*** in the same folder, and you're done.
+You can double click ***`sr_danmaku.exe`*** to run.
+
+
 ## Known Issues
 
-1. Command Prompt programs freeze on Windows 10 solusion: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
+1. The program freezes on on Windows 10 Command Prompt window. Check the solusion below to disable the QuickEdit mode of Command Prompt: [Why is my command prompt freezing on Windows 10?](https://stackoverflow.com/questions/33883530/why-is-my-command-prompt-freezing-on-windows-10)
 
 
 -----------------------------------------------------------------------
