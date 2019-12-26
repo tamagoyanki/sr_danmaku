@@ -39,7 +39,7 @@ python sr_danmaku.py -u ROOM_URL_KEY
 ```
 Only comments from this room will be recorded.
 
-4. When a live is finished, the recorded comments will be converted to danmaku subtitle, and it will be saved as an ***`.ass`*** file under the folder ***`comments`***.
+4. When a live is finished, the recorded comments will be converted to danmaku subtitle, and it will be saved as a ***`.ass`*** file under the folder ***`comments`***.
 
 5. If the danmaku subtitles are not synchronized with the recorded showroom video. You can use [Aegisub Advanced Subtitle Editor](http://www.aegisub.org/) to edit the subtitle ***`.ass`*** file. Using Aegisub you can batch remove subtitles or batch time shift subtitles to synchronize with the video.
 
