@@ -18,11 +18,10 @@ import websocket
 from websocket import WebSocketConnectionClosedException
 
 
-
 # from bs4 import BeautifulSoup
 
 
-def getLives():
+def getOnLives():
     # disable logging from 'requests'
     logging.getLogger('urllib3').setLevel(logging.WARNING)
 
@@ -111,6 +110,60 @@ def getLives():
             # print(room)
             # print(json.dumps(room, indent=2, ensure_ascii=False))
     return room_all, pop_room
+
+
+def getRoomLiveInfo(room_url_key, room_id):
+
+    live_info_url = 'https://www.showroom-live.com/api/live/live_info?room_id=' + str(room_id)
+    headers = {'User-Agent':
+                   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+
+    try:
+        r = requests.get(live_info_url, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        logging.error('{}: Failed to get live info: ConnectionError - {}'.format(room_url_key, e))
+        return {}
+    if r.status_code != 200:
+        logging.error('{}: Failed to get live info: {} - {}'.format(room_url_key, r.status_code, r.reason))
+        return {}
+
+    try:
+        data = json.loads(r.text)
+    except JSONDecodeError as e:
+        logging.error('{}: Failed to get live info: broken message, JSON decode error: {}'.format(room_url_key, e))
+        return {}
+
+    # print('  room_name = {}'.format(data["room_name"]))
+    # print('  room_id = {}'.format(data["room_id"]))
+    # print('  live_status = {}'.format(data["live_status"]))
+    # print('  bcsvr_key = {}'.format(data["bcsvr_key"]))
+    # print('  bcsvr_host = {}'.format(data["bcsvr_host"]))
+    # print('  bcsvr_port = {}'.format(data["bcsvr_port"]))
+    # print('  live_id = {}'.format(data["live_id"]))
+    return data
+
+
+def getRoomIsLive(room_url_key, room_id):
+    url = 'https://www.showroom-live.com/room/is_live?room_id=' + str(room_id)
+    headers = {'User-Agent':
+                   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+
+    try:
+        r = requests.get(url, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        logging.error('{}: ConnectionError - {}'.format(room_url_key, e))
+        return {}
+    if r.status_code != 200:
+        logging.error('{}: requests error: {} - {}'.format(room_url_key, r.status_code, r.reason))
+        return {}
+
+    try:
+        data = json.loads(r.text)
+    except JSONDecodeError as e:
+        logging.error('{}: broken message, JSON decode error: {}'.format(room_url_key, e))
+        return {}
+    # print('room_is_live: ok = {}'.format(data["ok"]))
+    return data
 
 
 def convert_comments_to_danmaku(startTime, commentList,
@@ -389,6 +442,7 @@ class CommentRecorder:
                 # send bcsvr_key every 60 secs
                 if count >= 60:
                     count = 0
+
                     try:
                         # logging.debug('sending {}'.format(self.ws_send_txt))
                         ws.send(self.ws_send_txt)
@@ -396,6 +450,16 @@ class CommentRecorder:
                         logging.debug(
                             'WebSocket closed before sending message. {} Closing interval thread now...'.format(e))
                         break
+
+                    # also check if the room is still on live
+                    data = getRoomIsLive(self.room_url_key, self.room_id)
+                    if len(data) == 0:
+                        break
+                    if data["ok"] == 0:
+                        logging.debug('{} not on live, terminating interval thread and websocket...'.format(self.room_url_key))
+                        break
+                    else:
+                        logging.debug('{} still on live, "ok" = {}'.format(self.room_url_key, data["ok"]))
 
                 time.sleep(1)
                 count += 1
@@ -417,30 +481,18 @@ class CommentRecorder:
                                                      name='{} interval'.format(self.room_url_key), args=(ws,))
             self._thread_interval.start()
 
-        # Get live info from https://www.showroom-live.com/api/live/live_info?room_id=xxx
-        # If a room closes and then reopen on live within 30 seconds (approximately),
-        # the broadcast_key from https://www.showroom-live.com/api/live/onlives
-        # will not be updated with the new key. It's the same situation that when a
-        # room live is finished, /api/live/onlives will not update its onlives list within
-        # about 30 seconds. So here it's better to get accurate broadcast_key
-        # from /api/live/live_info
-        live_info_url = 'https://www.showroom-live.com/api/live/live_info?room_id=' + str(self.room_id)
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-        try:
-            r = requests.get(live_info_url, headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            logging.error('Failed to get live info: ConnectionError - {}'.format(e))
+        """
+        Get live info from https://www.showroom-live.com/api/live/live_info?room_id=xxx
+        If a room closes and then reopen on live within 30 seconds (approximately),
+        the broadcast_key from https://www.showroom-live.com/api/live/onlives
+        will not be updated with the new key. It's the same situation that when a
+        room live is finished, /api/live/onlives will not update its onlives list within
+        about 30 seconds. So here it's better to get accurate broadcast_key
+        from /api/live/live_info
+        """
+        info = getRoomLiveInfo(self.room_url_key, self.room_id)
+        if len(info) == 0:
             return False
-        if r.status_code != 200:
-            logging.error('Failed to get live info: {} - {}'.format(r.status_code, r.reason))
-            return False
-
-        try:
-            info = json.loads(r.text)
-        except JSONDecodeError as e:
-            logging.error('Broken live info, JSON decode error: {}'.format(e))
-            return False
-
         if len(info['bcsvr_key']) == 0:
             logging.debug('not on live, no bcsvr_key.')
             return False
@@ -604,7 +656,7 @@ class RoomMonitor:
         while True:
             if count >= self.interval:
                 count = 0
-                room_all, pop_room = getLives()
+                room_all, pop_room = getOnLives()
                 for i in range(self.nRooms):
                     if self.cRecords[i] is not None:
                         if self.cRecords[i].isRecording:
