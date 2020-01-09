@@ -15,6 +15,7 @@ import pytz
 import requests
 import websocket
 
+from websocket import ABNF
 from websocket import WebSocketConnectionClosedException
 
 
@@ -308,7 +309,6 @@ class CommentRecorder:
         self._thread_interval = None
         self._isQuit = False
         self._isRecording = False
-        self._needReconnect = False
 
         self.comment_output_func = comment_output_func
 
@@ -410,19 +410,7 @@ class CommentRecorder:
 
         def ws_on_error(ws, error):
             """ WebSocket callback """
-            if isinstance(error, UnicodeDecodeError):
-                data = error.object
-                try:
-                    data = data.decode('latin-1')
-                except UnicodeDecodeError:
-                    logging.error('UnicodeDecodeError cannot be fixed by latin-1 decode: {}'.format(error))
-                else:
-                    ws_on_message(ws, data)
-                    self._needReconnect = True
-                    logging.debug('UnicodeDecodeError: {}'.format(error))
-                    logging.debug('--> fixed by latin-1 decode: {}'.format(data))
-                    return
-            logging.error('websocket on error: {}'.format(error))
+            logging.error('websocket on error: {} - {}'.format(type(error).__name__, error))
 
         def ws_on_close(ws):
             """ WebSocket callback """
@@ -472,14 +460,94 @@ class CommentRecorder:
 
         def ws_on_open(ws):
             """ WebSocket callback """
-            if self.ws_startTime == 0:      # if not zero then it's a reconnection due to utf-8 decode error
-                self.ws_startTime = int(time.time() * 1000)
+            self.ws_startTime = int(time.time() * 1000)
             logging.debug('websocket on open')
 
             # keep sending bcsvr_key to the server to prevent disconnection
             self._thread_interval = threading.Thread(target=interval_send,
                                                      name='{} interval'.format(self.room_url_key), args=(ws,))
             self._thread_interval.start()
+
+        def ws_start(ws_uri, on_open=ws_on_open, on_message=ws_on_message,
+                     on_error=ws_on_error, on_close=ws_on_close):
+            """ WebSocket main loop """
+            self.ws = websocket.WebSocket()
+            # connect
+            try:
+                self.ws.connect(ws_uri)
+            except Exception as e:
+                on_error(self.ws, e)
+                return
+
+            on_open(self.ws)
+
+            buffer = b""
+            buffered_opcode = ABNF.OPCODE_TEXT
+            while not self._isQuit:
+                try:
+                    frame = self.ws.recv_frame()
+                except WebSocketConnectionClosedException as e:
+                    logging.debug('ws_start: WebSocket Closed')
+                    break
+                except Exception as e:
+                    on_error(self.ws, e)
+                    break
+
+                """
+                Fragmented frame example: For a text message sent as three fragments, 
+                the 1st fragment: opcode = 0x1 (OPCODE_TEXT) and FIN bit = 0, 
+                the 2nd fragment: opcode = 0x0 (OPCODE_CONT) and FIN bit = 0, 
+                the last fragment: opcode = 0x0 (OPCODE_CONT) and FIN bit = 1. 
+                """
+                if frame.opcode in (ABNF.OPCODE_TEXT, ABNF.OPCODE_BINARY, ABNF.OPCODE_CONT):
+                    buffer += frame.data
+                    if frame.opcode != ABNF.OPCODE_CONT:
+                        buffered_opcode = frame.opcode
+                    else:
+                        logging.debug('ws_start: fragment message: {}'.format(frame.data))
+
+                    # it's either a last fragmented frame, or a non-fragmented single message frame
+                    if frame.fin == 1:
+                        data = buffer
+                        buffer = b""
+                        if buffered_opcode == ABNF.OPCODE_TEXT:
+                            message = ""
+                            try:
+                                message = data.decode('utf-8')
+                                if message.find('}') < 0:
+                                    logging.debug('ws_start: broken message?: {}'.format(data))
+                                    logging.debug('ws_start: fin bit = {}'.format(frame.fin))
+                            except UnicodeDecodeError as e:
+                                message = data.decode('latin-1')
+                                logging.debug('ws_start: decoded as latin-1: {}'.format(message))
+                            except Exception as e:
+                                on_error(self.ws, e)
+
+                            on_message(self.ws, message)
+
+                        elif buffered_opcode == ABNF.OPCODE_BINARY:
+                            logging.debug('ws_start: received unknown binary data: {}'.format(data))
+
+                elif frame.opcode == ABNF.OPCODE_CLOSE:
+                    logging.debug('ws_start: received close opcode')
+                    # self.ws.close() will try to send close frame, so we skip sending close frame here
+                    break
+
+                elif frame.opcode == ABNF.OPCODE_PING:
+                    logging.debug('ws_start: received ping, sending pong')
+                    if len(frame.data) < 126:
+                        self.ws.pong(frame.data)
+                    else:
+                        logging.debug('ws_start: ping message too big to send')
+
+                elif frame.opcode == ABNF.OPCODE_PONG:
+                    logging.debug('ws_start: received pong')
+
+                else:
+                    logging.error('ws_start: unknown frame opcode = {}'.format(frame.opcode))
+
+            on_close(self.ws)
+            self.ws.close()
 
         """
         Get live info from https://www.showroom-live.com/api/live/live_info?room_id=xxx
@@ -507,29 +575,15 @@ class CommentRecorder:
             websocket.enableTrace(True)  # False: disable trace outputs
         else:
             websocket.enableTrace(False)
-        self.ws = websocket.WebSocketApp('ws://' + info['bcsvr_host'] + ':' + str(info['bcsvr_port']),
-                                         on_message=ws_on_message,
-                                         on_error=ws_on_error,
-                                         on_close=ws_on_close)
-        self.ws.on_open = ws_on_open
-        self.ws.run_forever(skip_utf8_validation=True)
+
+        ws_start('ws://' + info['bcsvr_host'] + ':' + str(info['bcsvr_port']),
+                 on_open=ws_on_open, on_message=ws_on_message,
+                 on_error=ws_on_error, on_close=ws_on_close)
 
         if self._thread_interval is not None:
             self._thread_interval.join()
 
-        # reconnection if utf-8 decode error causes websocket to close
-        while self._needReconnect:
-            # reset to initial value
-            self._thread_interval = None
-            self._isQuit = False
-            self._needReconnect = False
-
-            logging.debug('Reconnecting WebSocket...')
-            self.ws.run_forever(skip_utf8_validation=True)
-
-            if self._thread_interval is not None:
-                self._thread_interval.join()
-
+        # sorting
         self.comment_log = sorted(self.comment_log, key=lambda x: x['received_at'])
 
         if self.comment_count > 0:
@@ -585,7 +639,7 @@ class CommentRecorder:
         def saveLog(_logfile):
             with open(_logfile, 'w', encoding='utf8') as logfp:
                 for item in self.comment_log:
-                    logfp.write('{}{}'.format(item, '\n'))
+                    logfp.write('{}{}'.format(json.dumps(item, ensure_ascii=False), '\n'))
             logging.info(self.room_url_key + ': recording finished, saved to ' + _logfile)
 
         def saveAss(_assfile):
