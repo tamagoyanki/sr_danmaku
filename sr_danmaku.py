@@ -6,6 +6,7 @@ import json
 import math
 import random
 import logging
+import logging.handlers
 
 from json import JSONDecodeError
 from argparse import ArgumentParser
@@ -216,6 +217,18 @@ def convert_comments_to_danmaku(startTime, commentList,
         if m_type == '1':  # comment
             comment = data['cm']
 
+        elif m_type == '3':  # voting start
+            poll = data['l']
+            if len(poll) < 1:
+                continue
+            comment = 'Poll Started: 【({})'.format(poll[0]['id'] % 10000)
+            for k in range(1, len(poll)):
+                if k > 4:
+                    comment += ', ...'
+                    break
+                comment += ', ({})'.format(poll[k]['id'] % 10000)
+            comment += '】'
+
         elif m_type == '4':  # voting result
             poll = data['l']
             if len(poll) < 1:
@@ -223,6 +236,7 @@ def convert_comments_to_danmaku(startTime, commentList,
             comment = 'Poll: 【({}) {}%'.format(poll[0]['id'] % 10000, poll[0]['r'])
             for k in range(1, len(poll)):
                 if k > 4:
+                    comment += ', ...'
                     break
                 comment += ', ({}) {}%'.format(poll[k]['id'] % 10000, poll[k]['r'])
             comment += '】'
@@ -348,16 +362,15 @@ class CommentRecorder:
             try:
                 data = json.loads(message)
             except JSONDecodeError as e:
-                logging.debug('broken message, JSON decode error: {}'.format(e))
-                logging.debug('--> {}'.format(message))
+                # logging.debug('JSONDecodeError, broken message: {}'.format(message))
                 # try to fix
                 message += '","t":"1"}'
                 try:
                     data = json.loads(message)
                 except JSONDecodeError:
-                    logging.error('failed to fix broken message, JSON decode error: {}'.format(message))
+                    logging.error('JSONDecodeError, failed to fix broken message: {}'.format(message))
                     return
-                logging.debug('--> fix passed: {}'.format(message))
+                logging.debug('broken message, JSONDecodeError is fixed: {}'.format(message))
 
             # add current time
             data['received_at'] = now
@@ -402,6 +415,9 @@ class CommentRecorder:
             elif m_type == '2':  # gift
                 pass
 
+            elif m_type == '3':  # voting start
+                self.comment_log.append(data)
+
             elif m_type == '4':  # voting result
                 self.comment_log.append(data)
                 logging.debug('{}: has voting result'.format(self.room_url_key))
@@ -428,7 +444,7 @@ class CommentRecorder:
 
         def ws_on_close(ws):
             """ WebSocket callback """
-            logging.debug('websocket closed')
+            # logging.debug('websocket closed')
             self._isQuit = True
 
         def interval_send(ws):
@@ -461,7 +477,8 @@ class CommentRecorder:
                         logging.debug('{} not on live, terminating interval thread and websocket...'.format(self.room_url_key))
                         break
                     else:
-                        logging.debug('{} still on live, "ok" = {}'.format(self.room_url_key, data["ok"]))
+                        # logging.debug('{} still on live, "ok" = {}'.format(self.room_url_key, data["ok"]))
+                        pass
 
                 time.sleep(1)
                 count += 1
@@ -470,12 +487,12 @@ class CommentRecorder:
             if ws is not None:
                 ws.close()
                 ws = None
-            logging.debug('interval thread finished')
+            # logging.debug('interval thread finished')
 
         def ws_on_open(ws):
             """ WebSocket callback """
             self.ws_startTime = int(time.time() * 1000)
-            logging.debug('websocket on open')
+            # logging.debug('websocket on open')
 
             # keep sending bcsvr_key to the server to prevent disconnection
             self._thread_interval = threading.Thread(target=interval_send,
@@ -528,12 +545,12 @@ class CommentRecorder:
                             message = ""
                             try:
                                 message = data.decode('utf-8')
-                                if message.find('}') < 0:
-                                    logging.debug('ws_start: broken message?: {}'.format(data))
-                                    logging.debug('ws_start: fin bit = {}'.format(frame.fin))
+                                # if message.find('}') < 0:
+                                #     logging.debug('ws_start: broken message?: {}'.format(data))
+                                #     logging.debug('ws_start: fin bit = {}'.format(frame.fin))
                             except UnicodeDecodeError as e:
                                 message = data.decode('latin-1')
-                                logging.debug('ws_start: decoded as latin-1: {}'.format(message))
+                                logging.debug('ws_start: UnicodeDecodeError, decoded as latin-1: {}'.format(message))
                             except Exception as e:
                                 on_error(self.ws, e)
 
@@ -543,7 +560,7 @@ class CommentRecorder:
                             logging.debug('ws_start: received unknown binary data: {}'.format(data))
 
                 elif frame.opcode == ABNF.OPCODE_CLOSE:
-                    logging.debug('ws_start: received close opcode')
+                    # logging.debug('ws_start: received close opcode')
                     # self.ws.close() will try to send close frame, so we skip sending close frame here
                     break
 
@@ -576,7 +593,7 @@ class CommentRecorder:
         if len(info) == 0:
             return False
         if len(info['bcsvr_key']) == 0:
-            logging.debug('not on live, no bcsvr_key.')
+            # logging.debug('not on live, no bcsvr_key.')
             return False
 
         logging.info('{}: is on live, start recording comments'.format(self.room_url_key))
@@ -586,7 +603,8 @@ class CommentRecorder:
         self._isRecording = True
         self.ws_send_txt = 'SUB\t' + info['bcsvr_key']
         if self.settings['program_settings']['show_debug_message'] > 0:
-            websocket.enableTrace(True)  # False: disable trace outputs
+            # websocket.enableTrace(True)  # False: disable trace outputs
+            websocket.enableTrace(False)
         else:
             websocket.enableTrace(False)
 
@@ -600,7 +618,7 @@ class CommentRecorder:
         # sorting
         self.comment_log = sorted(self.comment_log, key=lambda x: x['received_at'])
 
-        if self.comment_count > 0:
+        if len(self.comment_log) > 0:
             # convert comments to danmaku
             alpha = self.settings['danmaku_settings']['alpha']
             alpha = int(round(alpha * 255.0 / 100.0))
@@ -664,7 +682,7 @@ class CommentRecorder:
         try:
             if self.save_comments_debug_log > 0:
                 saveLog(logfile)
-            if self.comment_count > 0:
+            if len(self.comment_log) > 0:
                 saveAss(assfile)
         except FileNotFoundError as e:
             logging.error('FileNotFoundError: {}'.format(e))
@@ -720,7 +738,7 @@ class RoomMonitor:
         self.cRecords = [None] * self.nRooms
 
         count = self.interval
-        logging.debug('interval = {}, {} rooms = {}'.format(self.interval, self.nRooms, self.room_url_keys))
+        # logging.debug('interval = {}, {} rooms = {}'.format(self.interval, self.nRooms, self.room_url_keys))
         while True:
             if count >= self.interval:
                 count = 0
@@ -735,7 +753,7 @@ class RoomMonitor:
 
                     for room in room_all:
                         if self.room_url_keys[i] == room['room_url_key']:
-                            logging.debug('{}: is on main site live list.'.format(self.room_url_keys[i]))
+                            # logging.debug('{}: is on main site live list.'.format(self.room_url_keys[i]))
                             cr = CommentRecorder(self.room_url_keys[i], room, self.settings)
                             cr.start()
                             self.cRecords[i] = cr
@@ -899,7 +917,11 @@ def main():
     log.addHandler(consoleHandler)
 
     if settings['program_settings']['save_program_debug_log'] > 0:
-        fileHandler = logging.FileHandler('sr_danmaku.log', encoding='utf-8')
+        fileHandler = logging.handlers.TimedRotatingFileHandler('sr_danmaku.log', when='midnight', backupCount=7, encoding='utf-8')
+        # fileHandler = logging.handlers.TimedRotatingFileHandler('sr_danmaku.log', when='M', interval=1, backupCount=7, encoding='utf-8')
+        # fileHandler.suffix = "_%Y%m%d_%H%M.log"
+
+        # fileHandler = logging.FileHandler('sr_danmaku.log', encoding='utf-8')
         fileFmt = logging.Formatter(fmt='%(asctime)s [%(threadName)s][%(levelname)s][%(name)s] %(message)s',
                                     datefmt='%y%m%d %H:%M:%S')
         fileHandler.setFormatter(fileFmt)
