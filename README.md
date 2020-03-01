@@ -10,6 +10,7 @@ The saved ***`.ass`*** subtitle file can then be watched with the recorded Showr
 ```
 pip install -r requirements.txt
 ```
+3. Install the font ***`MS PGothic`*** for the ass file. You can download it [***here***](https://mega.nz/#!EMQxkaYa!TvtYveTrqVX8wwzIPJaLD5Gg--iGF0Y5HlFrNi0bpwE).
 
 ## Usage
 
