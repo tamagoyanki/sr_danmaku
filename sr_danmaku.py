@@ -33,7 +33,12 @@ def getOnLives():
     try:
         r = requests.get(sr_onlives_url, headers=headers)
     except requests.exceptions.ConnectionError as e:
-        logging.error('Connection error')
+        logging.error('Connection error, wait for 60s...')
+        time.sleep(60)
+        return [], []
+    except Exception as e:
+        logging.error('getOnLives error, wait for 60s...: {} - {}'.format(type(e).__name__, e))
+        time.sleep(60)
         return [], []
 
     if r.status_code != 200:
